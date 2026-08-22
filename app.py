@@ -7,7 +7,7 @@ import datetime
 
 app = Flask(__name__)
 
-HTML_PAGE = '''<!DOCTYPE html>
+HTML_PAGE = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -765,7 +765,7 @@ async function loadStock() {
     document.getElementById('oi-support').innerText = `₹${data.oi_analysis.max_put_oi_strike}`;
     document.getElementById('oi-resistance').innerText = `₹${data.oi_analysis.max_call_oi_strike}`;
     document.getElementById('oi-prediction').innerText = data.oi_analysis.prediction;
-    document.getElementById('oi-prediction').className = 'stat-val ' + (data.oi_analysis.is_bullish ? 'pos' : 'neg');
+    document.getElementById('oi-prediction').className = 'metric-val ' + (data.oi_analysis.is_bullish ? 'pos' : 'neg');
     document.getElementById('oi-analysis-text').innerText = data.oi_analysis.interpretation;
 
     // Base Valuation Ratios
@@ -956,7 +956,7 @@ window.onload = loadStock;
 </script>
 </body>
 </html>
-'''
+'''.strip()
 
 BROKERAGE_REPORTS_DB = {
     "KEC": [
