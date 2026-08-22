@@ -12,7 +12,7 @@ HTML_PAGE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Stock Screener, Sector Intelligence & Multi-Stock Comparator</title>
+<title>Pro Stock Screener, Technical Terminal & Financial Statements</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -32,7 +32,6 @@ HTML_PAGE = """<!DOCTYPE html>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   body { background: var(--bg); color: var(--text); padding: 18px; min-height: 100vh; }
   .container { max-width: 1260px; margin: 0 auto; }
-  
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   
   .search-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
@@ -55,7 +54,6 @@ HTML_PAGE = """<!DOCTYPE html>
   .bullet-list li { margin-bottom: 8px; font-size: 0.86rem; line-height: 1.45; color: #cbd5e1; position: relative; padding-left: 16px; }
   .bullet-list li::before { content: "▪"; color: var(--blue); position: absolute; left: 0; font-size: 1rem; top: -1px; }
 
-  /* Brokerage Table */
   .brokerage-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.82rem; }
   .brokerage-table th { background: rgba(8, 12, 20, 0.8); color: var(--muted); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 700; text-transform: uppercase; }
   .brokerage-table td { padding: 9px 10px; border-bottom: 1px solid rgba(31, 44, 66, 0.5); color: #cbd5e1; }
@@ -65,7 +63,6 @@ HTML_PAGE = """<!DOCTYPE html>
   .view-more-btn { background: #080c14; border: 1px solid var(--border); color: var(--blue); padding: 7px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; margin-top: 10px; width: 100%; transition: 0.2s; }
   .view-more-btn:hover { background: rgba(56, 189, 248, 0.1); border-color: var(--blue); }
 
-  /* AI Trade & Pattern Box */
   .ai-trade-box { background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(74, 222, 128, 0.08)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 14px; }
   .trade-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
   @media(max-width: 800px) { .trade-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -78,7 +75,6 @@ HTML_PAGE = """<!DOCTYPE html>
   .pattern-card .p-title { font-size: 0.7rem; color: var(--muted); font-weight: 700; }
   .pattern-card .p-val { font-size: 0.88rem; font-weight: 800; margin-top: 2px; }
 
-  /* Chart Controls */
   .chart-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
   .btn-group { display: flex; background: #080c14; border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; }
   .tool-btn { background: transparent; border: none; color: var(--muted); padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
@@ -88,19 +84,10 @@ HTML_PAGE = """<!DOCTYPE html>
   #main-chart { width: 100%; height: 380px; border-radius: 8px; overflow: hidden; background: #080c14; border: 1px solid var(--border); }
   #rsi-chart { width: 100%; height: 130px; border-radius: 8px; overflow: hidden; background: #080c14; border: 1px solid var(--border); margin-top: 8px; display: none; }
 
-  /* Toggle Accordion Bars */
   .action-toggle-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #111a2e;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 13px 18px;
-    cursor: pointer;
-    margin-bottom: 14px;
-    user-select: none;
-    transition: 0.2s;
+    display: flex; justify-content: space-between; align-items: center;
+    background: #111a2e; border: 1px solid var(--border); border-radius: 10px;
+    padding: 13px 18px; cursor: pointer; margin-bottom: 14px; user-select: none; transition: 0.2s;
   }
   .action-toggle-bar:hover { border-color: var(--blue); background: rgba(56, 189, 248, 0.05); }
   .action-toggle-bar.primary { border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.06); }
@@ -108,17 +95,10 @@ HTML_PAGE = """<!DOCTYPE html>
   .toggle-icon { font-size: 1.1rem; color: var(--cyan); transition: transform 0.3s; }
   .toggle-icon.open { transform: rotate(180deg); }
 
-  /* Collapsible Panels */
   .collapse-panel {
-    display: none;
-    background: #111a2e;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    margin-bottom: 14px;
+    display: none; background: #111a2e; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px;
   }
 
-  /* Screener Financial Statement Tabs */
   .screener-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; flex-wrap: wrap; }
   .screener-tab-btn { background: #080c14; border: 1px solid var(--border); color: var(--muted); padding: 7px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
   .screener-tab-btn.active { background: var(--blue); color: #080c14; border-color: var(--blue); }
@@ -131,7 +111,6 @@ HTML_PAGE = """<!DOCTYPE html>
   .screener-table td.metric-name { text-align: left; font-weight: 600; color: #f8fafc; position: sticky; left: 0; background: #111a2e; }
   .screener-table tr:hover td { background: rgba(56, 189, 248, 0.05); }
 
-  /* Sensitivity Simulator */
   .sim-layout { display: grid; grid-template-columns: 1fr 1.25fr; gap: 18px; }
   @media(max-width: 900px) { .sim-layout { grid-template-columns: 1fr; } }
   
@@ -165,7 +144,6 @@ HTML_PAGE = """<!DOCTYPE html>
   .stat-val { font-size: 1.15rem; font-weight: 800; margin: 3px 0; }
   .pos { color: var(--green); } .neg { color: var(--rose); }
 
-  /* News List */
   .news-item { padding: 8px 0; border-bottom: 1px solid rgba(31, 44, 66, 0.6); }
   .news-item:last-child { border-bottom: none; }
   .news-headline { font-size: 0.86rem; font-weight: 600; color: #f1f5f9; text-decoration: none; display: block; }
@@ -402,7 +380,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
         <div class="section-title">Capital Structure & Debt</div>
         <div class="input-row"><label>Total Debt ($/₹ Cr): <span class="val" id="disp-debt">-</span></label><input type="range" id="inp-debt" min="0" max="50000" step="20" value="100" oninput="recalc()"></div>
-        <div class="input-row"><label>Shareholders\' Equity ($/₹ Cr): <span class="val" id="disp-eq">-</span></label><input type="range" id="inp-eq" min="10" max="100000" step="20" value="500" oninput="recalc()"></div>
+        <div class="input-row"><label>Shareholders' Equity ($/₹ Cr): <span class="val" id="disp-eq">-</span></label><input type="range" id="inp-eq" min="10" max="100000" step="20" value="500" oninput="recalc()"></div>
         <div class="input-row"><label>Operating Profit - EBIT ($/₹ Cr): <span class="val" id="disp-ebit">-</span></label><input type="range" id="inp-ebit" min="10" max="50000" step="10" value="200" oninput="recalc()"></div>
         <div class="input-row"><label>Annual Interest Expense ($/₹ Cr): <span class="val" id="disp-int">-</span></label><input type="range" id="inp-int" min="1" max="10000" step="1" value="20" oninput="recalc()"></div>
       </div>
@@ -509,7 +487,7 @@ function renderBrokerageTable() {
   const reports = stockData.brokerage_reports;
   const showCount = isAllReportsShown ? reports.length : Math.min(5, reports.length);
   
-  for (let i =0; i < showCount; i++) {
+  for (let i = 0; i < showCount; i++) {
     const r = reports[i];
     const tr = document.createElement('tr');
     const up = ((r.target - stockData.price) / stockData.price) * 100;
@@ -780,7 +758,7 @@ async function loadStock() {
     document.getElementById('oi-support').innerText = `₹${data.oi_analysis.max_put_oi_strike}`;
     document.getElementById('oi-resistance').innerText = `₹${data.oi_analysis.max_call_oi_strike}`;
     document.getElementById('oi-prediction').innerText = data.oi_analysis.prediction;
-    document.getElementById('oi-prediction').className = 'stat-val ' + (data.oi_analysis.is_bullish ? 'pos' : 'neg');
+    document.getElementById('oi-prediction').className = 'metric-val ' + (data.oi_analysis.is_bullish ? 'pos' : 'neg');
     document.getElementById('oi-analysis-text').innerText = data.oi_analysis.interpretation;
 
     // Base Valuation Ratios
@@ -971,7 +949,7 @@ window.onload = loadStock;
 </script>
 </body>
 </html>
-'''
+''', endpoint='index')
 
 BROKERAGE_REPORTS_DB = {
     "KEC": [
