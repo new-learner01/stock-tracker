@@ -35,7 +35,7 @@ HTML_PAGE = """<!DOCTYPE html>
   
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   
-  /* Top Bar */
+  /* Search Bar */
   .search-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   .search-input { background: #080c14; border: 1px solid var(--border); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 0.95rem; width: 260px; text-transform: uppercase; font-weight: 700; outline: none; }
   .search-input:focus { border-color: var(--blue); }
