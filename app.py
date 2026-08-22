@@ -1,13 +1,4 @@
-from flask import Flask, request, jsonify, render_template_string
-import yfinance as yf
-import pandas as pd
-import numpy as np
-import os
-import datetime
-
-app = Flask(__name__)
-
-HTML_PAGE = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -16,25 +7,13 @@ HTML_PAGE = """<!DOCTYPE html>
 <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
-    --bg: #080c14;
-    --card: #111a2e;
-    --border: #1f2c42;
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --blue: #38bdf8;
-    --green: #4ade80;
-    --rose: #f43f5e;
-    --amber: #fbbf24;
-    --purple: #c084fc;
-    --cyan: #22d3ee;
-    --emerald: #10b981;
+    --bg: #080c14; --card: #111a2e; --border: #1f2c42; --text: #f8fafc; --muted: #94a3b8;
+    --blue: #38bdf8; --green: #4ade80; --rose: #f43f5e; --amber: #fbbf24; --purple: #c084fc; --cyan: #22d3ee; --emerald: #10b981;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   body { background: var(--bg); color: var(--text); padding: 18px; min-height: 100vh; }
   .container { max-width: 1260px; margin: 0 auto; }
-  
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-  
   .search-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   .search-input { background: #080c14; border: 1px solid var(--border); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 0.95rem; width: 220px; text-transform: uppercase; font-weight: 700; outline: none; }
   .search-input:focus { border-color: var(--blue); }
@@ -43,18 +22,14 @@ HTML_PAGE = """<!DOCTYPE html>
   .chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .chip { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); color: var(--blue); padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; cursor: pointer; font-weight: 600; }
   .chip:hover { background: var(--blue); color: #080c14; }
-
   .header-banner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
   .price-large { font-size: 1.85rem; font-weight: 800; color: var(--blue); }
-
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
   @media(max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-
   .box-title { font-size: 0.92rem; font-weight: 700; color: var(--cyan); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
   .bullet-list { list-style: none; }
   .bullet-list li { margin-bottom: 8px; font-size: 0.86rem; line-height: 1.45; color: #cbd5e1; position: relative; padding-left: 16px; }
   .bullet-list li::before { content: "▪"; color: var(--blue); position: absolute; left: 0; font-size: 1rem; top: -1px; }
-
   .brokerage-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.82rem; }
   .brokerage-table th { background: rgba(8, 12, 20, 0.8); color: var(--muted); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 700; text-transform: uppercase; }
   .brokerage-table td { padding: 9px 10px; border-bottom: 1px solid rgba(31, 44, 66, 0.5); color: #cbd5e1; }
@@ -63,47 +38,32 @@ HTML_PAGE = """<!DOCTYPE html>
   .report-link:hover { text-decoration: underline; color: var(--cyan); }
   .view-more-btn { background: #080c14; border: 1px solid var(--border); color: var(--blue); padding: 7px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; margin-top: 10px; width: 100%; transition: 0.2s; }
   .view-more-btn:hover { background: rgba(56, 189, 248, 0.1); border-color: var(--blue); }
-
   .ai-trade-box { background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(74, 222, 128, 0.08)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 14px; }
   .trade-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
   @media(max-width: 800px) { .trade-grid { grid-template-columns: repeat(2, 1fr); } }
-
   .pattern-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 12px; }
   @media(max-width: 900px) { .pattern-grid { grid-template-columns: repeat(3, 1fr); } }
   @media(max-width: 550px) { .pattern-grid { grid-template-columns: repeat(2, 1fr); } }
-  
   .pattern-card { background: rgba(8, 12, 20, 0.9); border: 1px solid var(--border); border-radius: 6px; padding: 8px; text-align: center; }
   .pattern-card .p-title { font-size: 0.7rem; color: var(--muted); font-weight: 700; }
   .pattern-card .p-val { font-size: 0.88rem; font-weight: 800; margin-top: 2px; }
-
   .chart-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
   .btn-group { display: flex; background: #080c14; border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; }
   .tool-btn { background: transparent; border: none; color: var(--muted); padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
   .tool-btn.active { background: var(--blue); color: #080c14; }
   .tool-btn.toggle.on { background: rgba(56, 189, 248, 0.25); color: var(--blue); border: 1px solid var(--blue); }
-
   #main-chart { width: 100%; height: 380px; border-radius: 8px; overflow: hidden; background: #080c14; border: 1px solid var(--border); }
   #rsi-chart { width: 100%; height: 130px; border-radius: 8px; overflow: hidden; background: #080c14; border: 1px solid var(--border); margin-top: 8px; display: none; }
-
-  .action-toggle-bar {
-    display: flex; justify-content: space-between; align-items: center;
-    background: #111a2e; border: 1px solid var(--border); border-radius: 10px;
-    padding: 13px 18px; cursor: pointer; margin-bottom: 14px; user-select: none; transition: 0.2s;
-  }
+  .action-toggle-bar { display: flex; justify-content: space-between; align-items: center; background: #111a2e; border: 1px solid var(--border); border-radius: 10px; padding: 13px 18px; cursor: pointer; margin-bottom: 14px; user-select: none; transition: 0.2s; }
   .action-toggle-bar:hover { border-color: var(--blue); background: rgba(56, 189, 248, 0.05); }
   .action-toggle-bar.primary { border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.06); }
   .toggle-title { font-size: 0.92rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 8px; }
   .toggle-icon { font-size: 1.1rem; color: var(--cyan); transition: transform 0.3s; }
   .toggle-icon.open { transform: rotate(180deg); }
-
-  .collapse-panel {
-    display: none; background: #111a2e; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px;
-  }
-
+  .collapse-panel { display: none; background: #111a2e; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
   .screener-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; flex-wrap: wrap; }
   .screener-tab-btn { background: #080c14; border: 1px solid var(--border); color: var(--muted); padding: 7px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
   .screener-tab-btn.active { background: var(--blue); color: #080c14; border-color: var(--blue); }
-
   .screener-table-wrapper { overflow-x: auto; margin-top: 10px; }
   .screener-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
   .screener-table th { background: #080c14; color: var(--muted); padding: 9px 12px; text-align: right; border: 1px solid var(--border); font-weight: 700; white-space: nowrap; }
@@ -111,46 +71,37 @@ HTML_PAGE = """<!DOCTYPE html>
   .screener-table td { padding: 8px 12px; text-align: right; border: 1px solid rgba(31, 44, 66, 0.6); color: #cbd5e1; white-space: nowrap; }
   .screener-table td.metric-name { text-align: left; font-weight: 600; color: #f8fafc; position: sticky; left: 0; background: #111a2e; }
   .screener-table tr:hover td { background: rgba(56, 189, 248, 0.05); }
-
   .sim-layout { display: grid; grid-template-columns: 1fr 1.25fr; gap: 18px; }
   @media(max-width: 900px) { .sim-layout { grid-template-columns: 1fr; } }
-  
   .input-row { margin-bottom: 10px; }
   .input-row label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
   .input-row span.val { color: var(--blue); font-weight: 700; }
   input[type="range"] { width: 100%; accent-color: var(--blue); cursor: pointer; }
   .section-title { font-size: 0.82rem; font-weight: 700; color: var(--emerald); text-transform: uppercase; letter-spacing: 0.05em; margin: 10px 0 5px 0; border-bottom: 1px solid var(--border); padding-bottom: 3px; }
-
   .results-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
   @media (max-width: 550px) { .results-grid { grid-template-columns: 1fr; } }
-
   .res-card { background: rgba(8, 12, 20, 0.85); border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
   .res-card.highlight { border-color: rgba(52, 211, 153, 0.4); background: rgba(16, 185, 129, 0.05); }
   .res-title { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
   .res-formula { font-size: 0.68rem; color: var(--cyan); font-family: monospace; }
   .res-num { font-size: 1.15rem; font-weight: 800; margin: 3px 0; }
   .status-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; width: fit-content; }
-  
   .good { background: rgba(74, 222, 128, 0.2); color: var(--green); }
   .mod { background: rgba(251, 191, 36, 0.2); color: var(--amber); }
   .warn { background: rgba(244, 63, 94, 0.2); color: var(--rose); }
-
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .grid-8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
   @media(max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-8 { grid-template-columns: repeat(4, 1fr); } }
   @media(max-width: 550px) { .grid-8 { grid-template-columns: repeat(2, 1fr); } }
-
   .stat-card { background: rgba(8, 12, 20, 0.85); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
   .stat-title { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; }
   .stat-val { font-size: 1.15rem; font-weight: 800; margin: 3px 0; }
   .pos { color: var(--green); } .neg { color: var(--rose); }
-
   .news-item { padding: 8px 0; border-bottom: 1px solid rgba(31, 44, 66, 0.6); }
   .news-item:last-child { border-bottom: none; }
   .news-headline { font-size: 0.86rem; font-weight: 600; color: #f1f5f9; text-decoration: none; display: block; }
   .news-headline:hover { color: var(--blue); }
   .news-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
-
   .status-notice { padding: 8px 14px; border-radius: 6px; font-size: 0.82rem; margin-bottom: 12px; display: none; }
   .notice-loading { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--blue); color: var(--blue); display: block; }
   .notice-success { background: rgba(74, 222, 128, 0.15); border: 1px solid var(--green); color: var(--green); display: block; }
@@ -159,8 +110,6 @@ HTML_PAGE = """<!DOCTYPE html>
 </head>
 <body>
 <div class="container">
-
-  <!-- Search Bar with Optional Multi-Stock Comparison Inputs -->
   <div class="card search-bar">
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
       <input type="text" id="ticker" class="search-input" placeholder="Primary Stock (e.g., KEC)" value="KEC">
@@ -180,7 +129,6 @@ HTML_PAGE = """<!DOCTYPE html>
 
   <div id="status-box" class="status-notice"></div>
 
-  <!-- Header Banner -->
   <div class="card header-banner">
     <div>
       <h2 id="name" style="font-size:1.35rem;">Loading...</h2>
@@ -192,7 +140,6 @@ HTML_PAGE = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Sector Performance & Side-by-Side Comparison Matrix -->
   <div class="card">
     <div class="box-title">🏢 Sector Classification, Peer Performance & Side-by-Side Comparison</div>
     <div style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;" id="sector-info-text">Sector: Loading... • Industry: Loading...</div>
@@ -213,7 +160,6 @@ HTML_PAGE = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- AI Trade Setup, Advanced Technicals & Chart Pattern Changes -->
   <div class="card ai-trade-box">
     <div class="box-title">
       <span>🤖 AI Technical Pattern, Breakout & Trade Blueprint</span>
@@ -222,26 +168,11 @@ HTML_PAGE = """<!DOCTYPE html>
     <div style="font-size:0.86rem; color:#cbd5e1; margin-bottom:10px;" id="pattern-desc">Analyzing price structure...</div>
     
     <div class="trade-grid">
-      <div class="stat-card">
-        <div class="stat-title">Suggested Entry</div>
-        <div class="stat-val" id="ai-entry" style="color:var(--blue);">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Target 1 (Base)</div>
-        <div class="stat-val" id="ai-t1" style="color:var(--green);">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Target 2 (Breakout)</div>
-        <div class="stat-val" id="ai-t2" style="color:var(--green);">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Stop Loss (Strict)</div>
-        <div class="stat-val" id="ai-sl" style="color:var(--rose);">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Risk : Reward</div>
-        <div class="stat-val" id="ai-rr" style="color:var(--amber);">-</div>
-      </div>
+      <div class="stat-card"><div class="stat-title">Suggested Entry</div><div class="stat-val" id="ai-entry" style="color:var(--blue);">-</div></div>
+      <div class="stat-card"><div class="stat-title">Target 1 (Base)</div><div class="stat-val" id="ai-t1" style="color:var(--green);">-</div></div>
+      <div class="stat-card"><div class="stat-title">Target 2 (Breakout)</div><div class="stat-val" id="ai-t2" style="color:var(--green);">-</div></div>
+      <div class="stat-card"><div class="stat-title">Stop Loss (Strict)</div><div class="stat-val" id="ai-sl" style="color:var(--rose);">-</div></div>
+      <div class="stat-card"><div class="stat-title">Risk : Reward</div><div class="stat-val" id="ai-rr" style="color:var(--amber);">-</div></div>
     </div>
 
     <div class="pattern-grid">
@@ -254,7 +185,6 @@ HTML_PAGE = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Derivative Open Interest (OI) & PCR Engine -->
   <div class="card">
     <div class="box-title">
       <span>⚡ Derivative Open Interest (OI) & Directional Sentiment Predictor</span>
@@ -269,21 +199,18 @@ HTML_PAGE = """<!DOCTYPE html>
     <div style="font-size:0.8rem; color:var(--muted); margin-top:8px;" id="oi-analysis-text">-</div>
   </div>
 
-  <!-- Full Interactive Chart Terminal -->
   <div class="card">
     <div class="chart-toolbar">
       <div class="btn-group">
         <button id="btn-candles" class="tool-btn active" onclick="setChartType('candles')">🕯️ Candles</button>
         <button id="btn-area" class="tool-btn" onclick="setChartType('area')">📉 Area Line</button>
       </div>
-
       <div class="btn-group">
         <button class="tool-btn" onclick="setTimeframe('1mo')">1M</button>
         <button class="tool-btn" onclick="setTimeframe('6mo')">6M</button>
         <button class="tool-btn active" id="tf-1y" onclick="setTimeframe('1y')">1Y</button>
         <button class="tool-btn" onclick="setTimeframe('5y')">5Y</button>
       </div>
-
       <div class="btn-group">
         <button id="btn-dma10" class="tool-btn toggle" onclick="toggleIndicator('dma10')">10 DMA</button>
         <button id="btn-dma20" class="tool-btn toggle" onclick="toggleIndicator('dma20')">20 DMA</button>
@@ -293,12 +220,10 @@ HTML_PAGE = """<!DOCTYPE html>
         <button id="btn-rsi" class="tool-btn toggle" onclick="toggleIndicator('rsi')">⚡ RSI(14)</button>
       </div>
     </div>
-
     <div id="main-chart"></div>
     <div id="rsi-chart"></div>
   </div>
 
-  <!-- DMAs & Multi-Period Returns -->
   <div class="card">
     <h4 style="color:var(--blue); font-size:0.9rem; margin-bottom:10px;">📊 Technical Daily Moving Averages (DMAs)</h4>
     <div class="grid-4">
@@ -323,7 +248,6 @@ HTML_PAGE = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- SINGLE BUTTON TOGGLE 1: SCREENER FINANCIAL STATEMENTS -->
   <div class="action-toggle-bar primary" onclick="togglePanel('screener-financials-panel', 'screener-arrow')">
     <div class="toggle-title">
       <span>📊 Full Screener.in Financial Statements (Quarterly Results, P&L, Balance Sheet, Cash Flows & Ratios)</span>
@@ -348,7 +272,6 @@ HTML_PAGE = """<!DOCTYPE html>
     <div id="tab-ratios" class="screener-tab-content" style="display:none;"><div class="screener-table-wrapper" id="ratios-table-container">Loading ratios and shareholding...</div></div>
   </div>
 
-  <!-- SINGLE BUTTON TOGGLE 2: SENSITIVITY SIMULATOR -->
   <div class="action-toggle-bar" onclick="togglePanel('fundamentals-collapse-panel', 'sim-arrow')">
     <div class="toggle-title">
       <span>🎛️ Interactive Valuation Multiples & Sensitivity Stress-Testing Simulator</span>
@@ -403,7 +326,6 @@ HTML_PAGE = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Management Highlights & Firm-Wise Brokerage Reports Section -->
   <div class="grid-2">
     <div class="card" style="margin-bottom:0;">
       <div class="box-title">🎙️ Management Meeting Highlights & Strategic Outlook</div>
@@ -426,7 +348,6 @@ HTML_PAGE = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Events & News Grid -->
   <div class="grid-2">
     <div class="card" style="margin-bottom:0;">
       <div class="box-title">📅 Major Upcoming Corporate Events</div>
@@ -660,7 +581,7 @@ async function loadStock() {
     return;
   }
 
-  showStatus(`Running live queries for ${sym}${peer1 ? ', '+peer1 : ''}${peer2 ? ', '+peer2 : ''}...`, 'notice-loading');
+  showStatus(`Running live queries for ${sym}${peer1 ? ', '+peer1 : ''}${peer2 ? ', '+peer2 : ''}...`, "notice-loading");
 
   let url = `/api/stock?symbol=${encodeURIComponent(sym)}&period=${encodeURIComponent(currentPeriod)}`;
   if (peer1) url += `&peer1=${encodeURIComponent(peer1)}`;
@@ -681,7 +602,6 @@ async function loadStock() {
     document.getElementById('price').innerText = `₹${data.price.toFixed(2)}`;
     document.getElementById('unit-curr').innerText = data.currency;
 
-    // Sector & Comparison Table
     document.getElementById('sector-info-text').innerText = `Sector: ${data.sector} • Industry: ${data.industry}`;
     document.getElementById('th-stock1').innerText = data.comparison.stock1.name + ` (${data.comparison.stock1.ticker})`;
     
@@ -709,10 +629,8 @@ async function loadStock() {
     metrics.forEach(m => {
       const tr = document.createElement('tr');
       let html = `<td style="font-weight:700; color:#f8fafc;">${m.label}</td>`;
-      
       const s1Val = data.comparison.stock1[m.key];
       html += `<td style="font-weight:700; color:var(--blue);">${s1Val !== null && s1Val !== undefined ? (m.pre||"") + s1Val.toLocaleString() + (m.post||"") : 'N/A'}</td>`;
-      
       if (data.comparison.stock2) {
         const s2Val = data.comparison.stock2[m.key];
         html += `<td style="font-weight:700; color:var(--purple);">${s2Val !== null && s2Val !== undefined ? (m.pre||"") + s2Val.toLocaleString() + (m.post||"") : 'N/A'}</td>`;
@@ -760,7 +678,7 @@ async function loadStock() {
     document.getElementById('oi-support').innerText = `₹${data.oi_analysis.max_put_oi_strike}`;
     document.getElementById('oi-resistance').innerText = `₹${data.oi_analysis.max_call_oi_strike}`;
     document.getElementById('oi-prediction').innerText = data.oi_analysis.prediction;
-    document.getElementById('oi-prediction').className = 'metric-val ' + (data.oi_analysis.is_bullish ? 'pos' : 'neg');
+    document.getElementById('oi-prediction').className = 'stat-val ' + (data.oi_analysis.is_bullish ? 'pos' : 'neg');
     document.getElementById('oi-analysis-text').innerText = data.oi_analysis.interpretation;
 
     document.getElementById('pe').innerText = data.pe ? `${data.pe.toFixed(2)}x` : 'N/A';
@@ -950,7 +868,7 @@ window.onload = loadStock;
 </script>
 </body>
 </html>
-'''
+''';
 
 BROKERAGE_REPORTS_DB = {
     "KEC": [
@@ -1007,22 +925,6 @@ BROKERAGE_REPORTS_DB = {
         {"firm": "Motilal Oswal", "date": "24 Jul 2026", "rating": "Buy", "target": 8450.00, "url": "https://trendlyne.com/research-reports/stock/172/BAJFINANCE/bajaj-finance-ltd/"},
         {"firm": "HDFC Securities", "date": "20 Jul 2026", "rating": "Buy", "target": 8300.00, "url": "https://trendlyne.com/research-reports/stock/172/BAJFINANCE/bajaj-finance-ltd/"},
         {"firm": "Citi", "date": "15 Jul 2026", "rating": "Buy", "target": 8600.00, "url": "https://trendlyne.com/research-reports/stock/172/BAJFINANCE/bajaj-finance-ltd/"}
-    ],
-    "GARUDA": [
-        {"firm": "Systematix Shares", "date": "15 Jul 2026", "rating": "Buy", "target": 240.00, "url": "https://trendlyne.com/research-reports/stock/GARUDA/"},
-        {"firm": "Ventura Securities", "date": "28 Jun 2026", "rating": "Subscribe", "target": 225.00, "url": "https://trendlyne.com/research-reports/stock/GARUDA/"},
-        {"firm": "Hem Securities", "date": "25 Jun 2026", "rating": "Subscribe", "target": 220.00, "url": "https://trendlyne.com/research-reports/stock/GARUDA/"},
-        {"firm": "Choice Broking", "date": "20 Jun 2026", "rating": "Subscribe", "target": 215.00, "url": "https://trendlyne.com/research-reports/stock/GARUDA/"},
-        {"firm": "Swastika Investmart", "date": "18 Jun 2026", "rating": "Apply", "target": 210.00, "url": "https://trendlyne.com/research-reports/stock/GARUDA/"},
-        {"firm": "Canara Bank Sec", "date": "10 Jun 2026", "rating": "Subscribe", "target": 218.00, "url": "https://trendlyne.com/research-reports/stock/GARUDA/"}
-    ],
-    "OSWALPUMPS": [
-        {"firm": "Arihant Capital", "date": "18 Jul 2026", "rating": "Buy", "target": 380.00, "url": "https://trendlyne.com/research-reports/stock/OSWALPUMPS/"},
-        {"firm": "Sharekhan", "date": "10 Jun 2026", "rating": "Buy", "target": 365.00, "url": "https://trendlyne.com/research-reports/stock/OSWALPUMPS/"},
-        {"firm": "Anand Rathi", "date": "25 May 2026", "rating": "Buy", "target": 375.00, "url": "https://trendlyne.com/research-reports/stock/OSWALPUMPS/"},
-        {"firm": "KR Choksey", "date": "15 May 2026", "rating": "Accumulate", "target": 350.00, "url": "https://trendlyne.com/research-reports/stock/OSWALPUMPS/"},
-        {"firm": "Geojit Financial", "date": "02 May 2026", "rating": "Buy", "target": 360.00, "url": "https://trendlyne.com/research-reports/stock/OSWALPUMPS/"},
-        {"firm": "Ventura Securities", "date": "20 Apr 2026", "rating": "Buy", "target": 385.00, "url": "https://trendlyne.com/research-reports/stock/OSWALPUMPS/"}
     ]
 }
 
@@ -1063,6 +965,14 @@ MANAGEMENT_INTEL = {
         "Diversification: Rapid growth in emerging verticals including auto loans, microfinance, and credit cards with partner banks."
     ]
 }
+
+def calculate_rsi(series, period=14):
+    delta = series.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
 def df_to_screener_table_html(df, title, is_india=True):
     if df is None or df.empty:
@@ -1547,4 +1457,4 @@ def get_stock():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-    
+  
