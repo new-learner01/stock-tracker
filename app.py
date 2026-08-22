@@ -303,7 +303,7 @@ def index():
       with open(path, 'r', encoding='utf-8') as f:
         return f.read()
   return (
-      '<h1>index.html not found. Please create index.html in the root of your'
+      '<h1>index.html not found. Please ensure index.html exists in your'
       ' repository.</h1>',
       404,
   )
@@ -528,6 +528,7 @@ def get_stock():
     above_50_dma = (dma50 is not None) and (current_p > dma50)
 
     if is_multiyear_breakout:
+      chart_structure = 'All-Time High Discovery'
       breakout_status = '🚀 Multi-Year ATH Breakout'
       pattern_analysis = (
           f'Stock is surging near its multi-year ATH of ₹{high_5y:.2f}. Price'
@@ -535,6 +536,7 @@ def get_stock():
       )
       is_bullish = True
     elif is_52w_breakout:
+      chart_structure = 'Ascending Triangle Breakout'
       breakout_status = '🔥 52-Week Range High Breakout'
       pattern_analysis = (
           f'Price is testing 52-week horizontal resistance at ₹{high_52w:.2f}.'
@@ -542,13 +544,23 @@ def get_stock():
       )
       is_bullish = True
     elif above_200_dma and above_50_dma:
+      chart_structure = 'Bullish Channel Consolidation'
       breakout_status = '📈 Bullish Trend Alignment'
       pattern_analysis = (
           f'Healthy primary uptrend above 50 DMA (₹{dma50:.2f}) and 200 DMA'
           f' (₹{dma200:.2f}). Accumulation on dips.'
       )
       is_bullish = True
+    elif above_200_dma and not above_50_dma:
+      chart_structure = 'Pullback / Flag Retest'
+      breakout_status = '⚠️ Pullback / Mean Reversion'
+      pattern_analysis = (
+          'Short-term retracement below 50 DMA. Macro support remains'
+          f' well-defended at 200 DMA (₹{dma200:.2f}). Await confirmation wick.'
+      )
+      is_bullish = False
     else:
+      chart_structure = 'Stage-1 Accumulation Base'
       breakout_status = '❄️ Range Support / Accumulation'
       pattern_analysis = (
           'Stock is consolidating in a stage-1 base structure below major'
