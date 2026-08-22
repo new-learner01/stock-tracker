@@ -527,6 +527,7 @@ def get_stock():
     above_200_dma = (dma200 is not None) and (current_p > dma200)
     above_50_dma = (dma50 is not None) and (current_p > dma50)
 
+    # Initialize all breakout and pattern variables with robust defaults
     if is_multiyear_breakout:
       chart_structure = 'All-Time High Discovery'
       breakout_status = '🚀 Multi-Year ATH Breakout'
@@ -556,7 +557,7 @@ def get_stock():
       breakout_status = '⚠️ Pullback / Mean Reversion'
       pattern_analysis = (
           'Short-term retracement below 50 DMA. Macro support remains'
-          f' well-defended at 200 DMA (₹{dma200:.2f}). Await confirmation wick.'
+          f' well-defended at 200 DMA (₹{dma200:.2f}).'
       )
       is_bullish = False
     else:
@@ -576,6 +577,33 @@ def get_stock():
     risk = current_p - stop_loss
     reward = target_1 - current_p
     rr_ratio = f'1 : {max(1.5, reward / max(0.1, risk)):.1f}'
+
+    # Fully defined technicals and ai_trade objects
+    technicals_detailed = {
+        'candle_pattern': candle_pattern,
+        'chart_structure': chart_structure,
+        'ma_cross': ma_cross,
+        'bb_upper': bb_upper,
+        'bb_lower': bb_lower,
+        'atr14': atr14,
+        'volatility_status': vol_status,
+        'pivot': pivot,
+        'r1': r1,
+        'r2': r2,
+        's1': s1,
+        's2': s2,
+    }
+
+    ai_trade = {
+        'breakout_status': breakout_status,
+        'pattern_analysis': pattern_analysis,
+        'is_bullish': is_bullish,
+        'entry_zone': entry_zone,
+        'target_1': target_1,
+        'target_2': target_2,
+        'stop_loss': stop_loss,
+        'risk_reward': rr_ratio,
+    }
 
     brokerage_reports = BROKERAGE_REPORTS_DB.get(clean, [
         {
@@ -749,20 +777,7 @@ def get_stock():
             'cf': cf_html,
             'ratios': ratios_html,
         },
-        'technicals_detailed': {
-            'candle_pattern': candle_pattern,
-            'chart_structure': chart_structure,
-            'ma_cross': ma_cross,
-            'bb_upper': bb_upper,
-            'bb_lower': bb_lower,
-            'atr14': atr14,
-            'volatility_status': vol_status,
-            'pivot': pivot,
-            'r1': r1,
-            'r2': r2,
-            's1': s1,
-            's2': s2,
-        },
+        'technicals_detailed': technicals_detailed,
         'ai_trade': ai_trade,
         'oi_analysis': {
             'pcr': 1.15 if is_bullish else 0.78,
@@ -811,4 +826,3 @@ def get_stock():
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-  
